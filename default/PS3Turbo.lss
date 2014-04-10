@@ -1,0 +1,153 @@
+
+PS3Turbo.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         0000007c  00000000  00000000  00000054  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .debug_aranges 00000020  00000000  00000000  000000d0  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  2 .debug_pubnames 0000001b  00000000  00000000  000000f0  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  3 .debug_info   00000076  00000000  00000000  0000010b  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  4 .debug_abbrev 00000041  00000000  00000000  00000181  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_line   000000d8  00000000  00000000  000001c2  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_frame  00000020  00000000  00000000  0000029c  2**2
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_str    00000085  00000000  00000000  000002bc  2**0
+                  CONTENTS, READONLY, DEBUGGING
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	09 c0       	rjmp	.+18     	; 0x14 <__ctors_end>
+   2:	21 c0       	rjmp	.+66     	; 0x46 <__bad_interrupt>
+   4:	20 c0       	rjmp	.+64     	; 0x46 <__bad_interrupt>
+   6:	1f c0       	rjmp	.+62     	; 0x46 <__bad_interrupt>
+   8:	1e c0       	rjmp	.+60     	; 0x46 <__bad_interrupt>
+   a:	1d c0       	rjmp	.+58     	; 0x46 <__bad_interrupt>
+   c:	1c c0       	rjmp	.+56     	; 0x46 <__bad_interrupt>
+   e:	1b c0       	rjmp	.+54     	; 0x46 <__bad_interrupt>
+  10:	1a c0       	rjmp	.+52     	; 0x46 <__bad_interrupt>
+  12:	19 c0       	rjmp	.+50     	; 0x46 <__bad_interrupt>
+
+00000014 <__ctors_end>:
+  14:	11 24       	eor	r1, r1
+  16:	1f be       	out	0x3f, r1	; 63
+  18:	cf e9       	ldi	r28, 0x9F	; 159
+  1a:	cd bf       	out	0x3d, r28	; 61
+
+0000001c <__do_copy_data>:
+  1c:	10 e0       	ldi	r17, 0x00	; 0
+  1e:	a0 e6       	ldi	r26, 0x60	; 96
+  20:	b0 e0       	ldi	r27, 0x00	; 0
+  22:	ec e7       	ldi	r30, 0x7C	; 124
+  24:	f0 e0       	ldi	r31, 0x00	; 0
+  26:	02 c0       	rjmp	.+4      	; 0x2c <.do_copy_data_start>
+
+00000028 <.do_copy_data_loop>:
+  28:	05 90       	lpm	r0, Z+
+  2a:	0d 92       	st	X+, r0
+
+0000002c <.do_copy_data_start>:
+  2c:	a0 36       	cpi	r26, 0x60	; 96
+  2e:	b1 07       	cpc	r27, r17
+  30:	d9 f7       	brne	.-10     	; 0x28 <.do_copy_data_loop>
+
+00000032 <__do_clear_bss>:
+  32:	10 e0       	ldi	r17, 0x00	; 0
+  34:	a0 e6       	ldi	r26, 0x60	; 96
+  36:	b0 e0       	ldi	r27, 0x00	; 0
+  38:	01 c0       	rjmp	.+2      	; 0x3c <.do_clear_bss_start>
+
+0000003a <.do_clear_bss_loop>:
+  3a:	1d 92       	st	X+, r1
+
+0000003c <.do_clear_bss_start>:
+  3c:	a0 36       	cpi	r26, 0x60	; 96
+  3e:	b1 07       	cpc	r27, r17
+  40:	e1 f7       	brne	.-8      	; 0x3a <.do_clear_bss_loop>
+  42:	02 d0       	rcall	.+4      	; 0x48 <main>
+  44:	19 c0       	rjmp	.+50     	; 0x78 <_exit>
+
+00000046 <__bad_interrupt>:
+  46:	dc cf       	rjmp	.-72     	; 0x0 <__vectors>
+
+00000048 <main>:
+// ----------------------------------------------------------------------------
+
+#include <avr/io.h>
+
+int main( void )
+{
+  48:	80 e8       	ldi	r24, 0x80	; 128
+  4a:	86 bd       	out	0x26, r24	; 38
+   CLKPR   = _BV(CLKPCE);                             // Set Clock Prescalar Change Enable flag
+   CLKPR   = 1;                                       // ... and set the Clock Prescalar to one
+  4c:	81 e0       	ldi	r24, 0x01	; 1
+  4e:	86 bd       	out	0x26, r24	; 38
+                                                      // ... for 64kHz system clock frequency
+
+   OCR0A    = 10;                                     // Set Output Compare Register A.  One tick is 1mS
+  50:	8a e0       	ldi	r24, 0x0A	; 10
+  52:	86 bf       	out	0x36, r24	; 54
+
+   DDRB    |= 1;                                      // Set PB0 to output
+  54:	b8 9a       	sbi	0x17, 0	; 23
+   PORTB   |= 2;
+  56:	c1 9a       	sbi	0x18, 1	; 24
+   {
+      if ( bit_is_set( PINB, 1 ))                     // INT0 is high ie. switch released
+      {
+         TCCR0A = 0;                                  // Stop the timer
+         TCCR0B = 0;                                  // Stop the timer
+         PORTB = 2;                                   // Turn the output off
+  58:	32 e0       	ldi	r19, 0x02	; 2
+      else
+      {
+         if ( TCCR0B == 0 )
+         {
+            TCNT0 = 0;                                // Reset timer
+            TCCR0A   = _BV( WGM01 ) + _BV( COM0A0 );  // Set timer mode to Clear Timer on Compare (CTC)
+  5a:	22 e4       	ldi	r18, 0x42	; 66
+            TCCR0B   = 0x03;                          // Start the timer freq. is 64Hz/64 => 1000/sec
+  5c:	93 e0       	ldi	r25, 0x03	; 3
+   DDRB    |= 1;                                      // Set PB0 to output
+   PORTB   |= 2;
+
+   while(1)
+   {
+      if ( bit_is_set( PINB, 1 ))                     // INT0 is high ie. switch released
+  5e:	b1 9b       	sbis	0x16, 1	; 22
+  60:	04 c0       	rjmp	.+8      	; 0x6a <main+0x22>
+      {
+         TCCR0A = 0;                                  // Stop the timer
+  62:	1f bc       	out	0x2f, r1	; 47
+         TCCR0B = 0;                                  // Stop the timer
+  64:	13 be       	out	0x33, r1	; 51
+         PORTB = 2;                                   // Turn the output off
+  66:	38 bb       	out	0x18, r19	; 24
+  68:	fa cf       	rjmp	.-12     	; 0x5e <main+0x16>
+      }
+      else
+      {
+         if ( TCCR0B == 0 )
+  6a:	83 b7       	in	r24, 0x33	; 51
+  6c:	88 23       	and	r24, r24
+  6e:	b9 f7       	brne	.-18     	; 0x5e <main+0x16>
+         {
+            TCNT0 = 0;                                // Reset timer
+  70:	12 be       	out	0x32, r1	; 50
+            TCCR0A   = _BV( WGM01 ) + _BV( COM0A0 );  // Set timer mode to Clear Timer on Compare (CTC)
+  72:	2f bd       	out	0x2f, r18	; 47
+            TCCR0B   = 0x03;                          // Start the timer freq. is 64Hz/64 => 1000/sec
+  74:	93 bf       	out	0x33, r25	; 51
+  76:	f3 cf       	rjmp	.-26     	; 0x5e <main+0x16>
+
+00000078 <_exit>:
+  78:	f8 94       	cli
+
+0000007a <__stop_program>:
+  7a:	ff cf       	rjmp	.-2      	; 0x7a <__stop_program>
